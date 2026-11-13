@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "kind": "cli",
+  "setup": [
+    {
+      "type": "argv",
+      "argv": [
+        "-c",
+        "import sys, os, tempfile; sys.path.insert(0, os.getcwd()); sys.path.insert(0, os.path.join(os.getcwd(), 'tests')); from parquet_writer import leaf, list3, struct_node, write_parquet; from nestedscan.metadata import TYPE_INT64, TYPE_BYTE_ARRAY; d = tempfile.mkdtemp(prefix='pointwise_'); schema = [leaf('x', TYPE_INT64), leaf('y', TYPE_INT64), list3('items', struct_node('it', [leaf('qty', TYPE_INT64), leaf('code', TYPE_BYTE_ARRAY, 1, True)]))]; rows = [{'x': 1, 'y': 0, 'items': [{'it': {'qty': 3, 'code': 'a'}}, {'it': {'qty': 1, 'code': 'b'}}]}, {'x': 0, 'y': 1, 'items': []}, {'x': 1, 'y': 1, 'items': [{'it': {'qty': 3, 'code': None}}]}]; p = os.path.join(d, 'vendor_items.parquet'); write_parquet(p, 'root', schema, rows, page_value_cap=3, page_version='v2', use_dict=True); print(p)"
+      ]
+    }
+  ],
+  "verify": [
+    {
+      "type": "argv",
+      "argv": [
+        "-m",
+        "nestedscan.cli",
+        "{vendor_items.parquet}",
+        "--column",
+        "[\"x\"]",
+        "--column",
+        "[\"items\", [], \"qty\"]",
+        "--where",
+        "[\"any\", [\"items\"], [\"eq\", [\"qty\"], 3]]"
+      ]
+    }
+  ],
+  "demo": [
+    {
+      "type": "argv",
+      "argv": [
+        "-m",
+        "nestedscan.cli",
+        "{vendor_items.parquet}",
+        "--column",
+        "[\"x\"]",
+        "--column",
+        "[\"items\", [], \"qty\"]",
+        "--column",
+        "[\"items\", [], \"code\"]"
+      ]
+    }
+  ]
+}
